@@ -1,0 +1,141 @@
+
+
+services:
+
+  rabbitmq:
+    build:
+      context: .
+      dockerfile: ./src/rabbitmq/Dockerfile
+    container_name: rabbitmq
+    hostname: ${RABBITMQ_HOST}
+    ports:
+      - "${RABBITMQ_PORT}:${RABBITMQ_PORT}"
+      - "15672:15672"
+    environment:
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    networks:
+      - backend
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://${RABBITMQ_HOST}:15672" ]
+      interval: 30s
+      retries: 3
+      start_period: 5s
+      timeout: 10s
+
+  redis:
+    image: redis:7.4.2
+    container_name: redis
+    hostname: ${REDIS_HOST}
+    ports:
+      - "${REDIS_PORT}:${REDIS_PORT}"
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      retries: 3
+      start_period: 5s
+      timeout: 10s
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    hostname: ${POSTGRES_HOST}
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
+      interval: 30s
+      retries: 3
+      start_period: 5s
+      timeout: 10s
+
+  fastapi:
+    build:
+      context: .
+      dockerfile: ./src/fastapi/Dockerfile
+    container_name: fastapi
+    hostname: fastapi
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT}
+      - FASTAPI_API_KEY_HEADER=${FASTAPI_API_KEY_HEADER}
+      - FASTAPI_API_KEY=${FASTAPI_API_KEY}
+      - FASTAPI_CORS_ORIGINS=${FASTAPI_CORS_ORIGINS}
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_PORT=${RABBITMQ_PORT}
+      - RABBITMQ_USER=${RABBITMQ_USER}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - DEVICE_API_URL=${DEVICE_API_URL}
+      - FAULT_API_URL=${FAULT_API_URL}
+      - ALERTING_HOST=${ALERTING_HOST}
+      - ALERTING_PORT=${ALERTING_PORT}
+      - TIMEZONE=${TIMEZONE}
+    networks:
+      - backend
+    healthcheck:
+      test: [ "CMD", "python3", "-c", "import http.client;
+             conn = http.client.HTTPConnection('localhost', 8000);
+             conn.request('GET', '/health');
+             res = conn.getresponse();
+             exit(0 if res.status == 200 else 1)" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  alert:
+    build:
+      context: .
+      dockerfile: ./src/alert/Dockerfile
+    container_name: alert
+    hostname: alert
+    ports:
+      - "8001:8001"
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - ALERTING_HOST=${ALERTING_HOST}
+      - ALERTING_PORT=${ALERTING_PORT}
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "bash", "-c", "curl -f http://localhost:8001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+
+networks:
+  backend:
+    driver: bridge
