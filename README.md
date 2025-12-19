@@ -64,29 +64,43 @@ ALERTING_PORT=your_alerting_port
 TIMEZONE=your_timezone
 ```
 
-# Using pip compile to compile the lock version of requirements.in
+### Using pip compile to compile the lock version of requirements.in
+```bash
 pip-compile requirements.in -o requirements.txt
+```
 
-# Using pip compile dev requirements
+### Using pip compile dev requirements
+```bash
 pip-compile requirements-dev.in -c requirements.txt -o requirements-dev.txt
+```
 
-# Initialize Virtual Environment and Sync
+### Initialize Virtual Environment and Sync
+```bash
 python3 -m venv .venv
 ./.venv/bin/activate
 pip install pip-tools
 pip-sync requirements.txt requirements-dev.txt
+```
 
-# Install Pre-commit hooks for Linting/Formatting
+### Install Pre-commit hooks for Linting/Formatting
+```bash
 pre-commit install
+```
 
-# Build & Start all services
+### Build & Start all services
+```bash
 docker-compose up --build -d
+```
 
-# Run code lint, static type checking and formatting
+### Run code lint, static type checking and formatting
+```bash
 isort .
 black src/
 mypy src/
 flake8 src/
+```
 
-# Run Comprehensive Test Suite with Coverage
+### Run Comprehensive Test Suite with Coverage
+```bash
 pytest tests --cov=src/fastapi
+```
