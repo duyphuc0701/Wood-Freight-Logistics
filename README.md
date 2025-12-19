@@ -1,79 +1,61 @@
-# Using pip compile to compile the lock version of requirements.in
-```sh
-pip-compile requirements.in -o requirements.txt
-```
+# 🚛 Wood Freight Logistics: IoT & Fleet Analytics Platform
 
-# Using pip compile dev requirements, but need to aware the feature packages
-```sh
-pip-compile requirements-dev.in -c requirements.txt -o requirements-dev.txt
-```
+[cite_start]This project represents a sophisticated backend ecosystem designed for a high-scale timber transportation company[cite: 1, 33]. [cite_start]It transitions legacy manual logistics tracking into a robust, automated analytical platform, utilizing **SOLID principles**, **Event-Driven Architecture (EDA)**, and **N-Layered design patterns** to manage fleet telemetry and hardware fault diagnostics[cite: 34, 36, 37].
 
-# Virtual env
-```sh
-python3 -m venv .venv
-./.venv/bin/activate
-pip install pip-tools
-pip-sync requirements.txt requirements-dev.txt
-```
+## 🌟 Key Technical Features
 
-# Run code lint, static type checking and formatting
-```sh
-pre-commit install  # install pre-commit hooks
-isort .
-black src/
-mypy src/
-flake8 src/
-```
+### 📡 Real-Time Telemetry & Fault Processing
+* [cite_start]**Fragmented Payload Reconstruction**: Implements a reconstruction algorithm to assemble multi-part hardware fault bits into complete data structures based on sequence markers and total counts[cite: 17, 18, 19].
+* [cite_start]**Fault Suppression Engine**: Reduces "alert fatigue" by implementing time-based suppression windows—where a fault lasting $x$ seconds causes subsequent identical codes to be ignored—calculated from big-endian payload integers[cite: 23, 24, 25].
+* [cite_start]**Reliability Layer**: Built-in resilience for external API dependencies, featuring **Redis-backed caching** [cite: 5] [cite_start]to handle "Internal Server Errors" (500) and "Rate Limit Exceeded" (429) scenarios[cite: 10, 12].
+* [cite_start]**Data Sanitization**: Automated filtering of redundant transmissions, records with missing velocity/mileage values, and signals from unrecognized hardware IDs[cite: 13, 14].
 
-# Run test
-```sh
-pytest tests --cov=src/fastapi
-```
+### 📊 Advanced Fleet Analytics
+* [cite_start]**Finite State Machine (FSM) Journey Logic**: Automates the detection of distinct "trips" (EngineOff, EngineOnStationary, Moving) by tracking vehicle state transitions from raw GPS streams[cite: 42, 52, 54].
+* [cite_start]**Daily Operational Summaries**: Aggregates raw telemetry into persistent summaries containing total distance ($km$), operational hours, and number of distinct trips[cite: 41, 42].
+* [cite_start]**Geospatial Hotspot Analysis**: Identifies idling "hotspots" by grouping coordinate data using rounding or geohashing to improve fleet fuel efficiency[cite: 175, 181, 206].
 
-
-# Run app
-## 📦 Setup .env
-Create a `.env` file in the root directory and add the following environment
-variables in `.env.example`:
-
-```dotenv
-ENVIRONMENT=development/production
-RABBITMQ_HOST=rabbitmq
-RABBITMQ_PORT=5672
-RABBITMQ_USER=your_rabbitmq_user
-RABBITMQ_PASSWORD=your_rabbitmq_password
-POSTGRES_USER=your_postgres_user
-POSTGRES_PASSWORD=your_postgres_password
-POSTGRES_HOST=your_postgres_host
-POSTGRES_PORT=5432
-POSTGRES_DB=your_postgres_name
-FASTAPI_API_KEY_HEADER=your_fastapi_api_key_header
-FASTAPI_API_KEY=your_fastapi_api_key
-FASTAPI_CORS_ORIGINS=https://localhost
-REDIS_HOST=localhost
-REDIS_PORT=6379
-DEVICE_API_URL=your_device_api_url
-FAULT_API_URL=your_fault_api_url
-ALERTING_HOST=your_alerting_host
-ALERTING_PORT=your_alerting_port
-```
-
-## 🚀 Running the Application
-
-### 1. Build & Start all services
-
-```sh
-# Create
-docker-compose up --build -d
-```
-
-### 2. Access Services
-
-- **FastAPI** (API & Swagger UI):
-http://localhost:8000
-    - Swagger: http://localhost:8000/docs
-
-- **RabbitMQ** (messaging):
-http://localhost:15672
+### 🏗️ Architectural Excellence
+* [cite_start]**N-Layered Service Design**: Strict separation between API (Presentation), Service (Application logic), and Data Access layers[cite: 102, 118].
+* **SOLID Implementation**:
+    * [cite_start]**Strategy Pattern**: Swappable algorithms for trip definitions [cite: 58, 59][cite_start], utilization scoring (Distance vs. Hours) [cite: 109, 110][cite_start], and time-based aggregation[cite: 165, 166].
+    * [cite_start]**Repository Pattern**: Abstracted database interactions (e.g., `IDailySummaryRepository`) ensure the core logic remains independent of the database technology (DIP)[cite: 48, 61, 116].
+    * [cite_start]**Fan-in Architecture**: A consolidated notification pipeline that accepts disparate GPS and Fault data schemas into a single alerting schema[cite: 28, 29].
 
 ---
+
+## 🛠️ Technology Stack
+
+| Category | Technology |
+| :--- | :--- |
+| **Framework** | FastAPI (Python 3.10+) |
+| **Messaging** | RabbitMQ (Event Streaming) |
+| **Data Store** | PostgreSQL (Relational Analytics), Redis (Caching) |
+| **DevOps** | Docker Compose, Pre-commit Hooks |
+| **Quality** | Pytest (Coverage), MyPy (Static Typing), Black/Flake8 |
+
+---
+
+## 🚀 Getting Started
+
+### 1. Environment Configuration
+Clone the repository and initialize your environment settings from the provided template:
+```sh
+cp .env.example .env
+# Update .env with your specific API keys and database credentials
+# Initialize Virtual Environment
+python3 -m venv env
+source ./env/bin/activate
+
+# Install and Sync dependencies
+pip install pip-tools
+pip-sync requirements.txt requirements-dev.txt
+
+# Install Pre-commit hooks for Linting/Formatting
+pre-commit install
+
+# Launch Platform (FastAPI, RabbitMQ, Redis, Postgres)
+docker-compose up --build -d
+
+# Run Comprehensive Test Suite with Coverage
+pytest tests --cov=src/fastapi
